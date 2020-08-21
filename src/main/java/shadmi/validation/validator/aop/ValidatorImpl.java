@@ -26,6 +26,10 @@ public class ValidatorImpl implements ConstraintValidator<ValidatorAnnotation, R
 
     @Override
     public void initialize(ValidatorAnnotation validatorAnnotation) {
+        initHashMap();
+    }
+
+    private void initHashMap() {
         this.map = new HashMap<>();
         map.put(PERSON_CODE, getPersonPredicate());
         map.put(EMPLOYEE_CODE, getEmployeePredicate());
@@ -34,8 +38,11 @@ public class ValidatorImpl implements ConstraintValidator<ValidatorAnnotation, R
 
     @Override
     public boolean isValid(RequestDTO requestDTO, ConstraintValidatorContext constraintValidatorContext) {
+        // Code is null
         if (requestDTO.getCode() == null) return false;
+        // No key available
         if (!map.containsKey(requestDTO.getCode())) return false;
+        // Both null
         if (requestDTO.getPerson() == null && requestDTO.getEmployee() == null) return false;
 
         return this.map.get(requestDTO.getCode()).test(requestDTO);
