@@ -20,7 +20,7 @@ public class ValidatorImpl implements ConstraintValidator<ValidatorAnnotation, R
     public static final int PERSON_CODE = 10;
     public static final int EMPLOYEE_CODE = 11;
     private final Validator validator;
-    Map<Integer, Predicate<Object>> map;
+    Map<Integer, Predicate<RequestDTO>> map;
 
 
 
@@ -34,30 +34,20 @@ public class ValidatorImpl implements ConstraintValidator<ValidatorAnnotation, R
 
     @Override
     public boolean isValid(RequestDTO requestDTO, ConstraintValidatorContext constraintValidatorContext) {
-        if ( requestDTO.getCode() != null ) {
-            if (map.containsKey(requestDTO.getCode())) {
-                if (requestDTO.getPerson() != null && requestDTO.getCode() == PERSON_CODE && requestDTO.getEmployee() == null) {
-                    return map.get(requestDTO.getCode()).test(requestDTO.getPerson());
-                } else if (requestDTO.getEmployee() != null && requestDTO.getCode() == EMPLOYEE_CODE && requestDTO.getPerson() == null) {
-                    return map.get(requestDTO.getCode()).test(requestDTO.getEmployee());
-                } else {
-                    // Both Objects are null
-                    return false;
-                }
-            } else{
-                // No Such a code available
-                return false;
-            }
-        } else {
-            // Code is null
-            return false;
-        }
+        if (requestDTO.getCode() == null) return false;
+        if (!map.containsKey(requestDTO.getCode())) return false;
+        if (requestDTO.getPerson() == null && requestDTO.getEmployee() == null) return false;
+
+        return this.map.get(requestDTO.getCode()).test(requestDTO);
+
+
     }
 
 
-    private Predicate<Object> getEmployeePredicate() {
-        return (emp) -> {
-            Set<ConstraintViolation<Employee>> violations = validator.validate((Employee)emp);
+    private Predicate<RequestDTO> getEmployeePredicate() {
+        return (dto) -> {
+            if(dto.getPerson() != null  && dto.getEmployee() == null && dto.getCode() != EMPLOYEE_CODE ) return false;
+            Set<ConstraintViolation<Employee>> violations = validator.validate(dto.getEmployee());
             if (!violations.isEmpty()) {
                 throw new ConstraintViolationException(violations);
             }
@@ -65,9 +55,10 @@ public class ValidatorImpl implements ConstraintValidator<ValidatorAnnotation, R
         };
     }
 
-    private Predicate<Object> getPersonPredicate() {
-        return (person) -> {
-            Set<ConstraintViolation<Person>> violations = validator.validate((Person)person);
+    private Predicate<RequestDTO> getPersonPredicate() {
+        return (dto) -> {
+            if(dto.getPerson() == null && dto.getEmployee() != null && dto.getCode() != PERSON_CODE) return false;
+            Set<ConstraintViolation<Person>> violations = validator.validate(dto.getPerson());
             if (!violations.isEmpty()) {
                 throw new ConstraintViolationException(violations);
             }
